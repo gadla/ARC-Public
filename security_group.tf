@@ -1,4 +1,4 @@
-resource "aws_security_group" "aws_security_group" {
+resource "aws_security_group" "default_security_group" {
   name        = "example-sg"
   description = "Example Security Group"
   vpc_id      = aws_vpc.main_vpc.id
@@ -27,6 +27,6 @@ resource "aws_security_group" "aws_security_group" {
   }
 
   tags = {
-    Name = "example-sg"
+    Name = "default-sg"
   }
 }

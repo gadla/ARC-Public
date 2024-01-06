@@ -1,3 +1,4 @@
+# Creation of my VPC
 resource "aws_vpc" "main_vpc" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
@@ -7,6 +8,7 @@ resource "aws_vpc" "main_vpc" {
   }
 }
 
+# Subnet creation
 resource "aws_subnet" "Windows_subnet" {
   vpc_id                  = aws_vpc.main_vpc.id
   cidr_block              = var.subnet_cidrs[0]
@@ -25,18 +27,6 @@ resource "aws_subnet" "Linux_subnet" {
   }
 }
 
-# resource "aws_subnet" "main_subnet" {
-#   count = length(var.subnet_cidrs)
-
-#   vpc_id                  = aws_vpc.main_vpc.id
-#   cidr_block              = var.subnet_cidrs[count.index]
-#   map_public_ip_on_launch = true
-
-#   tags = {
-#     Name = var.subnet_names[count.index]
-#   }
-# }
-
 resource "aws_subnet" "firewall_subnet" {
   vpc_id                  = aws_vpc.main_vpc.id
   cidr_block              = var.firewall_subnet_cidr
@@ -46,6 +36,8 @@ resource "aws_subnet" "firewall_subnet" {
     Name = "FirewallSubnet"
   }
 }
+
+# Internet Gateway creation
 resource "aws_internet_gateway" "main_igw" {
   vpc_id = aws_vpc.main_vpc.id
 
@@ -54,6 +46,7 @@ resource "aws_internet_gateway" "main_igw" {
   }
 }
 
+# Route table creation
 resource "aws_route_table" "main_rt" {
   vpc_id = aws_vpc.main_vpc.id
 
@@ -63,7 +56,7 @@ resource "aws_route_table" "main_rt" {
   }
 
   tags = {
-    Name = "MainRouteTable"
+    Name = "FirewallRouteTable"
   }
 }
 
@@ -72,8 +65,8 @@ resource "aws_route_table" "rt_windows" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    #gateway_id = aws_internet_gateway.main_igw.id
-    gateway_id = aws_networkfirewall_firewall.ARC_Firewall.id
+    gateway_id = aws_internet_gateway.main_igw.id
+    #gateway_id = aws_networkfirewall_firewall.main_firewall.id
   }
 
   tags = {
@@ -86,7 +79,8 @@ resource "aws_route_table" "rt_linux" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_networkfirewall_firewall.ARC_Firewall.id
+    #gateway_id = aws_internet_gateway.main_igw.id
+    gateway_id = aws_networkfirewall_firewall.main_firewall.id
   }
 
   tags = {
@@ -104,11 +98,9 @@ resource "aws_route_table_association" "rt_windows" {
   route_table_id = aws_route_table.rt_windows.id
 }
 
-# resource "aws_route_table_association" "main_rta" {
-#   count = length(var.subnet_cidrs)
+resource "aws_route_table_association" "rta_firewall" {
+  subnet_id      = aws_subnet.firewall_subnet.id
+  route_table_id = aws_route_table.main_rt.id
+}
 
-#   subnet_id      = aws_subnet.main_subnet[count.index].id
-#   route_table_id = aws_route_table.main_rt.id
-# }
-
-
+# associate security group with vpc
